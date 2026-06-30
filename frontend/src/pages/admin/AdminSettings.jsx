@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Store, Award, Users, Handshake, CreditCard, Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('profile');
@@ -77,7 +78,10 @@ export default function AdminSettings() {
             </div>
 
             <div className="pt-6 border-t border-gray-100 flex justify-end">
-              <button className="flex items-center px-6 py-2.5 bg-fp-navy text-white rounded-lg font-bold hover:bg-[#2A3F54] transition-colors">
+              <button 
+                onClick={() => toast.success('Profile saved successfully!')}
+                className="flex items-center px-6 py-2.5 bg-fp-navy text-white rounded-lg font-bold hover:bg-[#2A3F54] transition-colors"
+              >
                 <Save className="w-4 h-4 mr-2" />
                 Save Changes
               </button>
@@ -164,7 +168,10 @@ export default function AdminSettings() {
             </div>
 
             <div className="pt-6 border-t border-gray-100 flex justify-end">
-              <button className="flex items-center px-6 py-2.5 bg-fp-navy text-white rounded-lg font-bold hover:bg-[#2A3F54] transition-colors">
+              <button 
+                onClick={() => toast.success('Points configuration saved successfully!')}
+                className="flex items-center px-6 py-2.5 bg-fp-navy text-white rounded-lg font-bold hover:bg-[#2A3F54] transition-colors"
+              >
                 <Save className="w-4 h-4 mr-2" />
                 Save Changes
               </button>

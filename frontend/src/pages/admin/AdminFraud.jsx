@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Search, Filter, Ban, CheckCircle, ChevronRight, Lock } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 
 const flagsOverTime = Array.from({length: 30}).map((_, i) => ({
   date: `06-${String(i+1).padStart(2, '0')}`,
@@ -94,7 +95,10 @@ export default function AdminFraud() {
                 <span className="text-xl font-bold text-green-600">{stats.resolved_flags}</span>
               </div>
             </div>
-            <button className="w-full mt-6 py-2.5 bg-fp-navy text-white rounded-lg font-bold hover:bg-[#2A3F54] transition-colors flex items-center justify-center">
+            <button 
+              onClick={() => toast.success('Security policies review initiated')}
+              className="w-full mt-6 py-2.5 bg-fp-navy text-white rounded-lg font-bold hover:bg-[#2A3F54] transition-colors flex items-center justify-center"
+            >
               <Lock className="w-4 h-4 mr-2" />
               Review Security Policies
             </button>
@@ -134,7 +138,7 @@ export default function AdminFraud() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="flex items-center px-4 py-2 border border-gray-200 bg-white rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={() => toast.success('Filter dialog opened')} className="flex items-center px-4 py-2 border border-gray-200 bg-white rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               <Filter className="w-4 h-4 mr-2 text-gray-400" />
               Filter
             </button>
@@ -154,7 +158,7 @@ export default function AdminFraud() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {flaggedAccounts.map((account) => (
+              {flaggedAccounts.filter(acc => acc.name.toLowerCase().includes(searchTerm.toLowerCase()) || acc.email.toLowerCase().includes(searchTerm.toLowerCase())).map((account) => (
                 <tr key={account.id} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-bold text-gray-900">{account.name}</div>

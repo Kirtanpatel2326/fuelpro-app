@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Gift, Award, Plus, Trash2, Edit } from 'lucide-react';
 import { api } from '@/lib/api';
 
-export default function GamificationManager() {
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+const GamificationManager = () => {
   const [challenges, setChallenges] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newChallengeData, setNewChallengeData] = useState({ title: '', points: 0, requirement: '' });
 
   const fetchChallenges = async () => {
     try {
-      const res = await api.get('/gamification/challenges');
-      if (res.data.success) {
-        setChallenges(res.data.data);
-      }
+      const { data } = await api.get('/gamification/challenges');
+      setChallenges(data);
     } catch (error) {
       console.error("Error fetching challenges", error);
     }
@@ -31,18 +34,27 @@ export default function GamificationManager() {
     }
   };
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCreateConfirm = async () => {
     try {
-      const newChallenge = {
-        title: "New Challenge",
-        points: 100,
-        requirement: "1 Requirement",
+      if (!newChallengeData.title || !newChallengeData.requirement) {
+        toast.error('Please fill in all fields');
+        return;
+      }
+      await api.post('/gamification/challenges', {
+        ...newChallengeData,
         status: "Active"
-      };
-      await api.post('/gamification/challenges', newChallenge);
+      });
+      setIsModalOpen(false);
+      setNewChallengeData({ title: '', points: 0, requirement: '' });
+      toast.success('Challenge created successfully');
       fetchChallenges();
     } catch (error) {
       console.error("Error creating challenge", error);
+      toast.error('Failed to create challenge');
     }
   };
 
@@ -112,7 +124,65 @@ export default function GamificationManager() {
             ))}
           </tbody>
         </table>
+        {/* Create Challenge Modal */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create New Challenge</DialogTitle>
+              <DialogDescription>
+                Add a new gamification challenge to drive customer behavior.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Challenge Title</label>
+                <input 
+                  type="text" 
+                  value={newChallengeData.title}
+                  onChange={(e) => setNewChallengeData({...newChallengeData, title: e.target.value})}
+                  className="w-full p-2 border border-gray-200 rounded-lg text-sm" 
+                  placeholder="e.g. Weekend Warrior" 
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Points Reward</label>
+                <input 
+                  type="number" 
+                  value={newChallengeData.points}
+                  onChange={(e) => setNewChallengeData({...newChallengeData, points: parseInt(e.target.value) || 0})}
+                  className="w-full p-2 border border-gray-200 rounded-lg text-sm" 
+                  placeholder="e.g. 500" 
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Requirement Description</label>
+                <textarea 
+                  value={newChallengeData.requirement}
+                  onChange={(e) => setNewChallengeData({...newChallengeData, requirement: e.target.value})}
+                  className="w-full p-2 border border-gray-200 rounded-lg text-sm min-h-[80px]" 
+                  placeholder="What must the user do?" 
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleCreateConfirm}
+                className="px-4 py-2 bg-[#0A1628] text-white rounded-lg hover:bg-[#2A3F54] font-medium text-sm transition-colors"
+              >
+                Create Challenge
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
 }
+
+export default GamificationManager;

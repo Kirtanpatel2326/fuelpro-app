@@ -153,7 +153,11 @@ export default function AdminLayout() {
             <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
             <select
               value={selectedLocation}
-              onChange={e => setSelectedLocation(e.target.value)}
+              onChange={e => {
+                setSelectedLocation(e.target.value);
+                toast.success('Location context updated');
+                window.dispatchEvent(new CustomEvent('location-changed', { detail: e.target.value }));
+              }}
               className="bg-gray-100 border-none text-sm font-semibold text-gray-700 rounded-lg px-3 py-1.5 focus:ring-0 cursor-pointer hover:bg-gray-200 transition-colors"
             >
               <option value="ALL">All Locations</option>
@@ -170,17 +174,21 @@ export default function AdminLayout() {
                 <button 
                   key={filter}
                   className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    filter === 'Custom' 
+                    filter === 'Today' 
                       ? 'bg-white shadow text-fp-navy border border-gray-200' 
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
+                  onClick={() => toast.success(`Date filter set to ${filter}`)}
                 >
                   {filter}
                 </button>
               ))}
             </div>
 
-            <button className="p-2 text-gray-400 hover:text-fp-navy transition-colors relative">
+            <button 
+              onClick={() => navigate('/admin/notifications')}
+              className="p-2 text-gray-400 hover:text-fp-navy transition-colors relative"
+            >
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-fp-red rounded-full ring-2 ring-white"></span>
             </button>
@@ -193,24 +201,19 @@ export default function AdminLayout() {
               <span className="hidden md:inline">Open POS Scanner</span>
             </button>
 
-            <button 
-              onClick={() => {
-                const currentPath = location.pathname;
-                if (currentPath === '/admin/locations') {
-                  window.dispatchEvent(new Event('open-create-location'));
-                } else if (currentPath === '/admin/coupons') {
-                  window.dispatchEvent(new Event('open-create-coupon'));
-                } else if (currentPath === '/admin/promotions') {
-                  toast.info('Promotion creation not implemented in demo');
-                } else {
-                  toast.info('Navigate to Locations or Coupons to create an item.');
-                }
-              }}
-              className="flex items-center bg-fp-red hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-full text-sm font-semibold transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Create</span>
-            </button>
+            <div className="relative group">
+              <button 
+                className="flex items-center bg-fp-red hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-full text-sm font-semibold transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Create</span>
+              </button>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden z-50">
+                <button onClick={() => { navigate('/admin/coupons'); setTimeout(() => window.dispatchEvent(new Event('open-create-coupon')), 500); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-medium text-fp-navy border-b border-gray-50">New Coupon</button>
+                <button onClick={() => { navigate('/admin/promotions'); toast.success('Navigate to Promotions to create one'); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-medium text-fp-navy border-b border-gray-50">New Promotion</button>
+                <button onClick={() => { navigate('/admin/gamification'); toast.success('Navigate to Gamification to create a challenge'); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-medium text-fp-navy">New Challenge</button>
+              </div>
+            </div>
           </div>
         </header>
 

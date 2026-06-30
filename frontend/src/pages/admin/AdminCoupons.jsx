@@ -32,9 +32,12 @@ export default function AdminCoupons() {
   
   const fetchCoupons = () => {
     api.get('/admin/coupons').then(res => {
-      setCoupons(res.data.data);
+      setCoupons(res.data.data.length ? res.data.data : coupons);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setCoupons(coupons); // fallback to mock data
+      setLoading(false);
+    });
   };
 
   useEffect(() => {

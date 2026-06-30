@@ -7,6 +7,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 import os
 import logging
+import certifi
 from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -26,8 +27,8 @@ from routes.scanner import router as scanner_router
 from routes.fraud import router as fraud_router
 from seed import run_seed
 from scheduler_jobs import start_scheduler
-from motor.motor_asyncio import AsyncIOMotorClient
-client = AsyncIOMotorClient(os.environ.get("MONGODB_URI", "mongodb://localhost:27017"))
+
+client = AsyncIOMotorClient(os.environ.get("MONGODB_URI", "mongodb://localhost:27017"), tlsCAFile=certifi.where())
 db = client[os.environ.get("DB_NAME", "fuelpro_dev")]
 
 app = FastAPI(title="FuelPro Rewards API")
@@ -93,16 +94,28 @@ from seed import run_seed
 
 @app.on_event("startup")
 async def startup():
+    # Vercel serverless environment check - skip background jobs and heavy seeds on cold start
+    if os.environ.get("VERCEL") == "1":
+        logger.info("Running in Vercel Serverless mode - skipping db index creation and background jobs")
+        return
+
     # Indexes
-    await db.users.create_index("email", unique=True)
-    await db.users.create_index("referral_code", unique=True)
-    await db.redemptions.create_index("token", unique=True)
-    await db.redemptions.create_index("claim_key", unique=True, sparse=True)
-    await db.login_attempts.create_index("key")
-    await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    try:
+        await db.users.create_index("email", unique=True)
+        await db.users.create_index("referral_code", unique=True)
+        await db.redemptions.create_index("token", unique=True)
+        await db.redemptions.create_index("claim_key", unique=True, sparse=True)
+        await db.login_attempts.create_index("key")
+        await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    except Exception as e:
+        logger.error(f"Index creation failed: {e}")
 
     # Seed data
-    await run_seed(db)
+    try:
+        if os.environ.get("ADMIN_EMAIL"):
+            await run_seed(db)
+    except Exception as e:
+        logger.error(f"Seed failed: {e}")
 
     # Background jobs
     global _scheduler

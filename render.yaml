@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: fuelpro-backend
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && uvicorn server:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "https://fuelpro-app-theta-eight.vercel.app,http://localhost:3000"
+      - key: DB_NAME
+        value: "fuelpro_dev"

@@ -20,47 +20,14 @@ class SyncScan(BaseModel):
 class SyncRequest(BaseModel):
     scans: List[SyncScan]
 
-def verify_staff_access(user: dict):
-    allowed = ["admin", "owner", "regional_manager", "store_manager", "staff"]
-    if user.get("role") not in allowed:
-        raise HTTPException(status_code=403, detail="Not authorized to use scanner")
+from services import verify_staff_access, process_redemption
 
 @router.post("/redeem")
 async def redeem_coupon(req: RedeemRequest, user: dict = Depends(get_current_user)):
     from server import db
-    verify_staff_access(user)
-        
-    redemption = await db.redemptions.find_one({"token": req.token, "status": "PENDING"})
-    if not redemption:
-        raise HTTPException(status_code=404, detail="Invalid or already used QR code")
-        
-    # Check expiry
-    if redemption.get("expires_at"):
-        expires_at = datetime.fromisoformat(redemption["expires_at"].replace("Z", "+00:00"))
-        if datetime.now(timezone.utc) > expires_at:
-            raise HTTPException(status_code=400, detail="QR code has expired")
-            
-    # Find the coupon
-    coupon = await db.coupons.find_one({"id": redemption["coupon_id"]}, {"_id": 0})
-    if not coupon:
-        raise HTTPException(status_code=404, detail="Associated coupon not found")
-
-    # Mark as redeemed
-    await db.redemptions.update_one(
-        {"id": redemption["id"]},
-        {"$set": {
-            "status": "REDEEMED",
-            "redeemed_at": datetime.now(timezone.utc).isoformat(),
-            "redeemed_by": user["id"],
-            "location_id": req.location_id
-        }}
-    )
     
-    # Increment coupon usage
-    await db.coupons.update_one(
-        {"id": redemption["coupon_id"]}, 
-        {"$inc": {"used_count": 1}}
-    )
+    verify_staff_access(user)
+    redemption, coupon, customer = await process_redemption(db, req.token, user["id"], req.location_id)
     
     return {"success": True, "message": "Coupon applied successfully!", "coupon": coupon}
 

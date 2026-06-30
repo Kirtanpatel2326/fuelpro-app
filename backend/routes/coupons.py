@@ -46,24 +46,30 @@ async def get_coupon(coupon_id: str, user: dict = Depends(get_current_user)):
 @router.post("/{coupon_id}/claim")
 async def claim_coupon(coupon_id: str, user: dict = Depends(get_current_user)):
     from server import db
+    import pymongo.errors
+    
     c = await db.coupons.find_one({"id": coupon_id})
     if not c:
         raise HTTPException(status_code=404, detail="Coupon not found")
+        
+    # Check max uses (global)
+    if c.get("max_uses") is not None and c.get("used_count", 0) >= c["max_uses"]:
+        raise HTTPException(status_code=409, detail="Coupon fully redeemed")
+        
     # Check per-user limit
     used = await db.redemptions.count_documents({
         "user_id": user["id"],
         "coupon_id": coupon_id,
     })
+    
     if used >= c.get("per_user_limit", 1):
         raise HTTPException(status_code=409, detail="You've already claimed this coupon")
-    # Check max uses
-    if c.get("max_uses") is not None and c.get("used_count", 0) >= c["max_uses"]:
-        raise HTTPException(status_code=409, detail="Coupon fully redeemed")
 
     redemption = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
         "coupon_id": coupon_id,
+        "claim_key": f"{user['id']}_{coupon_id}_{used}",
         "token": str(uuid.uuid4()),
         "status": "PENDING",
         "redeemed_at": None,
@@ -71,7 +77,12 @@ async def claim_coupon(coupon_id: str, user: dict = Depends(get_current_user)):
         "expires_at": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    await db.redemptions.insert_one(redemption)
+    
+    try:
+        await db.redemptions.insert_one(redemption)
+    except pymongo.errors.DuplicateKeyError:
+        raise HTTPException(status_code=409, detail="You've already claimed this coupon (concurrent request)")
+        
     redemption.pop("_id", None)
     return {"success": True, "data": redemption}
 

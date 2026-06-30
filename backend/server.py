@@ -25,9 +25,9 @@ from routes.locations import router as locations_router
 from routes.scanner import router as scanner_router
 from seed import run_seed
 from scheduler_jobs import start_scheduler
-from mongomock_motor import AsyncMongoMockClient
-client = AsyncMongoMockClient()
-db = client[os.environ["DB_NAME"]]
+from motor.motor_asyncio import AsyncIOMotorClient
+client = AsyncIOMotorClient(os.environ.get("MONGODB_URI", "mongodb://localhost:27017"))
+db = client[os.environ.get("DB_NAME", "fuelpro_dev")]
 
 app = FastAPI(title="FuelPro Rewards API")
 api_router = APIRouter(prefix="/api")
@@ -88,9 +88,9 @@ from seed import run_seed
 async def startup():
     # Indexes
     await db.users.create_index("email", unique=True)
-    await run_seed(db)
     await db.users.create_index("referral_code", unique=True)
     await db.redemptions.create_index("token", unique=True)
+    await db.redemptions.create_index("claim_key", unique=True, sparse=True)
     await db.login_attempts.create_index("key")
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
 

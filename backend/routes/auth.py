@@ -172,11 +172,35 @@ async def refresh_token(request: Request, response: Response):
 @router.post("/social")
 async def social_login(payload: dict, request: Request, response: Response):
     from server import db
-    # Mock implementation for demo - automatically log in as Alex
-    email = "alex@fuelpro.com"
+    
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required from social provider")
+    email = email.lower()
+    
     user = await db.users.find_one({"email": email})
     if not user:
-        raise HTTPException(status_code=401, detail="Demo user not found. Run seed script.")
+        # Determine tier (Bronze for new users)
+        bronze = await db.tiers.find_one({"name": "Bronze"})
+        
+        user_id = str(uuid.uuid4())
+        user = {
+            "id": user_id,
+            "email": email,
+            "password_hash": "", # No password for social login
+            "name": payload.get("name", email.split("@")[0]),
+            "phone": None,
+            "avatar_url": payload.get("picture"),
+            "birthday": None,
+            "referral_code": (email.split("@")[0][:4] + "-" + str(uuid.uuid4())[:6]).upper(),
+            "referred_by_id": None,
+            "tier_id": bronze["id"] if bronze else "bronze",
+            "total_points": 100,  # welcome bonus
+            "lifetime_points": 100,
+            "role": "user",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.users.insert_one(user)
         
     access = create_access_token(user["id"], email, user.get("role", "user"))
     refresh = create_refresh_token(user["id"])

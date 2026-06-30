@@ -79,3 +79,61 @@ def clean_doc(d: dict) -> dict:
         return d
     d.pop("_id", None)
     return d
+
+def verify_staff_access(user: dict):
+    from fastapi import HTTPException
+    allowed = ["admin", "owner", "regional_manager", "store_manager", "staff"]
+    if user.get("role") not in allowed:
+        raise HTTPException(status_code=403, detail="Not authorized to use scanner")
+
+async def process_redemption(db, token: str, staff_id: str, location_id: Optional[str] = None) -> tuple[dict, dict]:
+    from fastapi import HTTPException
+    
+    redemption = await db.redemptions.find_one({"token": token})
+    if not redemption:
+        raise HTTPException(status_code=404, detail="Invalid code")
+
+    if redemption["status"] == "REDEEMED":
+        raise HTTPException(status_code=409, detail="Already redeemed")
+    if redemption["status"] == "EXPIRED":
+        raise HTTPException(status_code=410, detail="Code expired")
+
+    # Check expiry
+    if redemption.get("expires_at"):
+        try:
+            # Handle possible "Z" vs "+00:00" formats
+            expires_at_str = redemption["expires_at"].replace("Z", "+00:00")
+            exp = datetime.fromisoformat(expires_at_str)
+            if datetime.now(timezone.utc) > exp:
+                await db.redemptions.update_one({"id": redemption["id"]}, {"$set": {"status": "EXPIRED"}})
+                raise HTTPException(status_code=410, detail="Code expired")
+        except ValueError:
+            pass
+
+    # Find coupon and customer
+    coupon = await db.coupons.find_one({"id": redemption["coupon_id"]}, {"_id": 0})
+    customer = await db.users.find_one({"id": redemption["user_id"]}, {"_id": 0, "password_hash": 0})
+    
+    if not coupon or not customer:
+        raise HTTPException(status_code=404, detail="Coupon or customer not found")
+
+    # Mark redeemed
+    now = datetime.now(timezone.utc).isoformat()
+    await db.redemptions.update_one(
+        {"id": redemption["id"]},
+        {"$set": {
+            "status": "REDEEMED", 
+            "redeemed_at": now, 
+            "redeemed_by": staff_id,
+            "location_id": location_id
+        }}
+    )
+    await db.coupons.update_one({"id": coupon["id"]}, {"$inc": {"used_count": 1}})
+    
+    # Reload redemption to get updated doc
+    redemption["status"] = "REDEEMED"
+    redemption["redeemed_at"] = now
+    redemption["redeemed_by"] = staff_id
+    redemption["location_id"] = location_id
+
+    return redemption, coupon, customer

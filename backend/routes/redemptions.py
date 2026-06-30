@@ -11,42 +11,10 @@ router = APIRouter(prefix="/redemptions", tags=["redemptions"])
 async def scan_qr(payload: ScanIn, staff: dict = Depends(get_current_user)):
     """Staff scans a QR code: validates and redeems."""
     from server import db
-    # Staff must be admin or have staff role (we treat admin as staff for v1)
-    if staff.get("role") not in ("admin", "staff"):
-        raise HTTPException(status_code=403, detail="Staff access required")
-
-    redemption = await db.redemptions.find_one({"token": payload.token})
-    if not redemption:
-        raise HTTPException(status_code=404, detail="Invalid code")
-
-    if redemption["status"] == "REDEEMED":
-        raise HTTPException(status_code=409, detail="Already redeemed")
-    if redemption["status"] == "EXPIRED":
-        raise HTTPException(status_code=410, detail="Code expired")
-
-    # Check expiry if set
-    if redemption.get("expires_at"):
-        try:
-            exp = datetime.fromisoformat(redemption["expires_at"])
-            if datetime.now(timezone.utc) > exp:
-                await db.redemptions.update_one({"id": redemption["id"]}, {"$set": {"status": "EXPIRED"}})
-                raise HTTPException(status_code=410, detail="Code expired")
-        except ValueError:
-            pass
-
-    # Look up coupon and customer
-    coupon = await db.coupons.find_one({"id": redemption["coupon_id"]}, {"_id": 0})
-    customer = await db.users.find_one({"id": redemption["user_id"]}, {"_id": 0, "password_hash": 0})
-    if not coupon or not customer:
-        raise HTTPException(status_code=404, detail="Coupon or customer not found")
-
-    # Mark redeemed
-    now = datetime.now(timezone.utc).isoformat()
-    await db.redemptions.update_one(
-        {"id": redemption["id"]},
-        {"$set": {"status": "REDEEMED", "redeemed_at": now, "redeemed_by": staff["id"]}},
-    )
-    await db.coupons.update_one({"id": coupon["id"]}, {"$inc": {"used_count": 1}})
+    from services import verify_staff_access, process_redemption
+    
+    verify_staff_access(staff)
+    redemption, coupon, customer = await process_redemption(db, payload.token, staff["id"])
 
     return {
         "success": True,
@@ -55,7 +23,7 @@ async def scan_qr(payload: ScanIn, staff: dict = Depends(get_current_user)):
             "coupon": coupon,
             "customer": {"id": customer["id"], "name": customer["name"], "email": customer["email"],
                          "avatar_url": customer.get("avatar_url")},
-            "redeemed_at": now,
+            "redeemed_at": redemption["redeemed_at"],
         },
     }
 

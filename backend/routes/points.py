@@ -20,5 +20,9 @@ async def adjust(payload: PointsAdjustIn, _: dict = Depends(get_admin_user)):
     target = await db.users.find_one({"id": payload.user_id})
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
+        
+    if target.get("total_points", 0) + payload.points < 0:
+        raise HTTPException(status_code=400, detail="Cannot deduct more points than user has")
+        
     txn = await award_points(db, payload.user_id, payload.points, "BONUS", payload.reason)
     return {"success": True, "data": txn}

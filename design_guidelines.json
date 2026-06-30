@@ -1,0 +1,147 @@
+{
+  "brand_identity": {
+    "name": "FuelPro Rewards",
+    "tagline": "Every gallon earns. Every visit rewards.",
+    "archetype": "Premium Hybrid (Dark Luxury Mobile + Clean Light SaaS)",
+    "overall_vibe": "Premium, rewarding, frictionless, modern"
+  },
+  "themes": {
+    "customer_mobile": {
+      "mode": "dark",
+      "colors": {
+        "background": "#0A1628",
+        "surface": "#112240",
+        "primary": "#F5A623",
+        "accent": "#E8132A",
+        "success": "#22C55E",
+        "text_primary": "#FFFFFF",
+        "text_secondary": "#8899AA"
+      }
+    },
+    "admin_dashboard": {
+      "mode": "light",
+      "colors": {
+        "background": "#F0F4F8",
+        "surface": "#FFFFFF",
+        "primary": "#0A1628",
+        "accent": "#F5A623",
+        "success": "#22C55E",
+        "text_primary": "#0A1628",
+        "text_secondary": "#8899AA"
+      }
+    },
+    "staff_scanner": {
+      "mode": "dark",
+      "colors": {
+        "background": "#0A1628",
+        "surface": "#112240",
+        "success": "#22C55E",
+        "error": "#E8132A",
+        "text_primary": "#FFFFFF"
+      }
+    }
+  },
+  "typography": {
+    "fonts": {
+      "display": "Inter, sans-serif",
+      "body": "Inter, sans-serif"
+    },
+    "scales": {
+      "h1": "text-4xl sm:text-5xl font-black tracking-tighter leading-tight",
+      "h2": "text-2xl sm:text-3xl font-extrabold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-bold tracking-tight",
+      "body": "text-base font-medium leading-relaxed",
+      "caption": "text-[11px] sm:text-xs font-normal tracking-wide uppercase"
+    },
+    "rules": {
+      "headers": "Use font-weight 800 with -0.5px letter spacing (tracking-tighter) for premium feel",
+      "body": "Use font-weight 400 to 600"
+    }
+  },
+  "spacing_and_layout": {
+    "corners": {
+      "cards": "rounded-2xl sm:rounded-3xl",
+      "buttons": "rounded-xl sm:rounded-2xl"
+    },
+    "spacing": {
+      "mobile": "p-4 to p-6 for inner containers, gap-4 to gap-6",
+      "admin": "p-6 to p-8 for cards, gap-6 to gap-8",
+      "scanner": "p-6"
+    }
+  },
+  "component_patterns": {
+    "customer": {
+      "points_card": {
+        "style": "Glassmorphism with deep navy gradient to gold edge. Inner shadow for depth. Glowing border.",
+        "tailwind_classes": "bg-gradient-to-br from-[#112240] to-[#0A1628] border border-[#F5A623]/30 shadow-[0_0_20px_rgba(245,166,35,0.15)] rounded-3xl p-6 relative overflow-hidden"
+      },
+      "tier_badges": {
+        "Bronze": "bg-gradient-to-br from-[#CD7F32] to-[#8A5A2B] text-white shadow-lg",
+        "Silver": "bg-gradient-to-br from-[#C0C0C0] to-[#71797E] text-white shadow-lg",
+        "Gold": "bg-gradient-to-br from-[#F5A623] to-[#B87C11] text-white shadow-lg",
+        "Platinum": "bg-gradient-to-br from-[#E5E4E2] to-[#808080] text-[#0A1628] shadow-lg"
+      },
+      "coupon_card": {
+        "style": "Mobile horizontal list view, dark surface (#112240) with subtle red/gold accent tag."
+      },
+      "reward_detail": {
+        "style": "Full-screen QR focus with frosted glass overlay (backdrop-blur-xl bg-[#0A1628]/80) and a glowing countdown timer."
+      }
+    },
+    "admin": {
+      "kpi_card": {
+        "style": "Minimalist white card on light gray background. 1px border. Sparklines for trends.",
+        "tailwind_classes": "bg-white rounded-2xl border border-[#8899AA]/20 p-6 shadow-sm hover:shadow-md transition-shadow"
+      },
+      "drawer_form": {
+        "style": "Right-side slide-out (Shadcn Sheet) for Coupon CRUD and Customer details. Clean white with Navy text."
+      },
+      "promotions_calendar": {
+        "style": "Customized Shadcn Calendar taking full width of its grid section, highlighting dates with primary Navy/Gold indicator dots."
+      }
+    },
+    "scanner": {
+      "layout": "60% left camera stream, 40% right results panel in landscape mode.",
+      "feedback": "Success flashes Green (#22C55E), Error flashes Red (#E8132A) across the camera overlay. Animated pulsing scan frame."
+    }
+  },
+  "motion_and_interactions": {
+    "buttons": "active:scale-[0.97] transition-transform duration-200 ease-out",
+    "tier_progress_ring": "Framer Motion animated SVG circle path drawing from 0 to current progress. Ease-out-cubic.",
+    "page_transitions": "Fade and slight slide-up (y: 10 to y: 0) on mount for the mobile app.",
+    "scanner_frame": "Pulsing border opacity for scanning state.",
+    "hover_states": "Subtle brightness shifts rather than stark color changes for dark mode elements."
+  },
+  "media": {
+    "onboarding": {
+      "slide_1": {
+        "url": "https://images.pexels.com/photos/18219435/pexels-photo-18219435.png",
+        "description": "Happy driver showing joy of rewards, placed as background with dark gradient overlay (bg-gradient-to-t from-[#0A1628] via-[#0A1628]/80 to-transparent)"
+      },
+      "slide_2": {
+        "url": "https://images.pexels.com/photos/18925020/pexels-photo-18925020.jpeg",
+        "description": "Convenience store snacks and coffee, dark gradient overlay."
+      },
+      "slide_3": {
+        "url": "https://images.pexels.com/photos/32860475/pexels-photo-32860475.jpeg",
+        "description": "Premium gas station at night, dark gradient overlay for deep contrast."
+      }
+    }
+  },
+  "iconography": {
+    "library": "lucide-react",
+    "style": "Customer side: Accent colored icons (Gold/Red). Admin side: Muted Gray icons for inactive, Navy for active."
+  },
+  "testing": {
+    "attributes": "All interactive and key informational elements MUST include a `data-testid` attribute (e.g., data-testid='login-submit-button', data-testid='reward-card-gold')."
+  },
+  "instructions_to_main_agent": [
+    "Build the frontend in React using Tailwind CSS and Shadcn UI.",
+    "Use Framer Motion for smooth micro-interactions (especially the tier progress ring and active:scale-[0.97]).",
+    "Maintain strict separation of context: mobile layouts for Customer, responsive/desktop layouts for Admin, landscape tablet layout for Scanner.",
+    "Do not use generic HTML inputs, use customized Shadcn form primitives.",
+    "Ensure the hero points card in the customer app looks highly premium with the specified #F5A623 glow and #112240 base.",
+    "All headers must use Inter font with font-weight 800 and tight tracking as requested by the user.",
+    "Data components on Admin must include Recharts for sparklines, line charts, and donut charts."
+  ]
+}

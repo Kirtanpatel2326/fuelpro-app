@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  /* FuelPro brand */
+  --navy-primary: #0A1628;
+  --navy-mid:     #112240;
+  --red-accent:   #E8132A;
+  --gold:         #F5A623;
+  --green:        #22C55E;
+  --light-gray:   #F0F4F8;
+  --text-gray:    #8899AA;
+
+  /* shadcn light (admin) */
+  --background: 210 33% 96%;
+  --foreground: 213 60% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 213 60% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 213 60% 10%;
+  --primary: 213 60% 10%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 33% 96%;
+  --secondary-foreground: 213 60% 10%;
+  --muted: 210 20% 92%;
+  --muted-foreground: 210 14% 54%;
+  --accent: 36 91% 55%;
+  --accent-foreground: 213 60% 10%;
+  --destructive: 354 84% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 210 20% 88%;
+  --input: 210 20% 88%;
+  --ring: 36 91% 55%;
+  --radius: 1rem;
+}
+
+.theme-dark {
+  --background: 213 60% 10%;
+  --foreground: 0 0% 100%;
+  --card: 217 56% 16%;
+  --card-foreground: 0 0% 100%;
+  --popover: 217 56% 16%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 36 91% 55%;
+  --primary-foreground: 213 60% 10%;
+  --secondary: 217 56% 18%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 217 30% 22%;
+  --muted-foreground: 210 14% 67%;
+  --accent: 354 84% 50%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 354 84% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 217 40% 24%;
+  --input: 217 40% 24%;
+  --ring: 36 91% 55%;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.font-display { font-family: 'Inter', sans-serif; font-weight: 800; letter-spacing: -0.5px; }
+
+/* Premium glow utility */
+.fp-glow-gold { box-shadow: 0 0 30px rgba(245, 166, 35, 0.25), 0 0 60px rgba(245, 166, 35, 0.1); }
+.fp-glow-red  { box-shadow: 0 0 24px rgba(232, 19, 42, 0.35); }
+.fp-glow-green{ box-shadow: 0 0 30px rgba(34, 197, 94, 0.4); }
+
+/* Press scale interaction */
+.fp-press { transition: transform 0.15s ease-out; }
+.fp-press:active { transform: scale(0.97); }
+
+/* Animated scan frame */
+@keyframes fp-scan-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.6), inset 0 0 0 2px rgba(245, 166, 35, 0.9); }
+  50% { box-shadow: 0 0 0 20px rgba(245, 166, 35, 0), inset 0 0 0 2px rgba(245, 166, 35, 0.5); }
+}
+.fp-scan-frame { animation: fp-scan-pulse 2s ease-in-out infinite; }
+
+/* Grain overlay */
+.fp-grain::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Hide scrollbars on horizontal scroll lists */
+.fp-no-scrollbar::-webkit-scrollbar { display: none; }
+.fp-no-scrollbar { scrollbar-width: none; }
+
+@layer base {
+  * { @apply border-border; }
+}

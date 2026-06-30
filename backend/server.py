@@ -70,6 +70,11 @@ app.include_router(api_router)
 
 # CORS — explicit origins required for cookie auth
 origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
+if not origins:
+    origins = [
+        "https://fuelpro-app-theta-eight.vercel.app",
+        "http://localhost:3000"
+    ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

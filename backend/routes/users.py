@@ -19,6 +19,10 @@ async def get_me(user: dict = Depends(get_current_user)):
 async def update_me(payload: UserUpdate, user: dict = Depends(get_current_user)):
     from server import db
     updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    
+    # Prevent self-promotion to admin
+    updates.pop("role", None)
+    
     if updates:
         await db.users.update_one({"id": user["id"]}, {"$set": updates})
     updated = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})

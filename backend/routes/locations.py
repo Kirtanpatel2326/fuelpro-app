@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from models import LocationCreate, FuelPriceUpdate, ScannerDeviceRegister
-from auth_utils import get_current_user, require_admin
+from auth_utils import get_current_user, get_admin_user as require_admin
 import datetime
 import uuid
 import server

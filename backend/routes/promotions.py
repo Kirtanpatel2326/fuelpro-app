@@ -32,12 +32,10 @@ async def admin_list(_: dict = Depends(get_admin_user)):
 @admin_router.post("")
 async def admin_create(payload: PromotionCreate, _: dict = Depends(get_admin_user)):
     from server import db
-    now_iso = datetime.now(timezone.utc).isoformat()
-    is_active = payload.starts_at <= now_iso <= payload.expires_at
     doc = {
         "id": str(uuid.uuid4()),
         **payload.model_dump(),
-        "is_active": is_active,
+        "is_active": True, # Active means "published". Date checks happen in list_active.
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.promotions.insert_one(doc)

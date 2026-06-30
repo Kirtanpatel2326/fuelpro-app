@@ -1,42 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer 
 } from 'recharts';
-
-const customerGrowth = Array.from({length: 30}).map((_, i) => ({
-  date: `06-${String(i+1).padStart(2, '0')}`,
-  value: Math.random() > 0.5 ? Math.random() * 0.5 + 0.5 : 0
-}));
-
-const weeklyRedemptions = [
-  { name: '06-21', value: 4.8 },
-  { name: '06-22', value: 5.2 },
-  { name: '06-23', value: 5.0 },
-  { name: '06-24', value: 4.2 },
-  { name: '06-25', value: 5.5 },
-  { name: '06-26', value: 4.8 },
-  { name: '06-27', value: 2.1 },
-];
-
-const tierDistribution = [
-  { name: 'Bronze', value: 45, color: '#CD7F32' },
-  { name: 'Gold', value: 20, color: '#FFD700' },
-  { name: 'Platinum', value: 5, color: '#E5E4E2' },
-  { name: 'Silver', value: 30, color: '#C0C0C0' },
-];
-
-const topCoupons = [
-  { name: '5% Cashback on Premium Fuel', redemptions: 35 },
-  { name: 'Free Coffee with Fill-up', redemptions: 34 },
-  { name: '20% Off Snacks', redemptions: 26 },
-  { name: '$5 Off Car Wash', redemptions: 25 },
-  { name: '$10 Off Diesel Fill-up', redemptions: 25 },
-  { name: 'BOGO Energy Drinks', redemptions: 23 },
-  { name: 'Free Donut Tuesday', redemptions: 21 },
-];
+import { api, formatApiErrorDetail } from '@/lib/api';
+import { toast } from 'sonner';
 
 export default function AdminAnalytics() {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    customerGrowth: [],
+    weeklyRedemptions: [],
+    tierDistribution: [],
+    topCoupons: [],
+    kpis: {
+      total_customers: 0,
+      active_this_week: 0,
+      total_redemptions: 0,
+      points_issued: 0,
+      estimated_revenue: 0
+    }
+  });
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      const [growthRes, weeklyRes, tierRes, couponRes, overviewRes] = await Promise.all([
+        api.get('/analytics/customer-growth'),
+        api.get('/analytics/weekly-redemptions'),
+        api.get('/analytics/tier-distribution'),
+        api.get('/analytics/coupon-performance'),
+        api.get('/analytics/overview')
+      ]);
+
+      setData({
+        customerGrowth: growthRes.data?.data || [],
+        weeklyRedemptions: weeklyRes.data?.data || [],
+        tierDistribution: tierRes.data?.data || [],
+        topCoupons: (couponRes.data?.data || []).map(c => ({
+          name: c.title,
+          redemptions: c.redemptions
+        })),
+        kpis: overviewRes.data?.data || {
+          total_customers: 0,
+          active_this_week: 0,
+          total_redemptions: 0,
+          points_issued: 0,
+          estimated_revenue: 0
+        }
+      });
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || 'Failed to load analytics data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500 font-medium animate-pulse">Loading analytics...</div>;
+  }
+
+  const { customerGrowth, weeklyRedemptions, tierDistribution, topCoupons, kpis } = data;
+
   return (
     <div className="space-y-6">
       
@@ -51,7 +80,7 @@ export default function AdminAnalytics() {
               <LineChart data={customerGrowth}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} minTickGap={30} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} dx={-10} domain={[0, 1]} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} dx={-10} domain={['auto', 'auto']} />
                 <RechartsTooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
                 <Line type="monotone" dataKey="value" stroke="#F5A623" strokeWidth={2} dot={{r: 3, fill: '#F5A623', strokeWidth: 1, stroke: '#fff'}} />
               </LineChart>
@@ -95,7 +124,7 @@ export default function AdminAnalytics() {
               {tierDistribution.map(tier => (
                 <div key={tier.name} className="flex items-center text-sm font-bold text-gray-400">
                   <span className="w-3 h-3 rounded-sm mr-2" style={{backgroundColor: tier.color}}></span>
-                  <span style={{color: tier.color}}>{tier.name}</span>
+                  <span style={{color: tier.color}}>{tier.name} ({tier.value}%)</span>
                 </div>
               ))}
             </div>
@@ -116,7 +145,7 @@ export default function AdminAnalytics() {
                   <div 
                     className="h-2.5" 
                     style={{
-                      width: `${(coupon.redemptions / topCoupons[0].redemptions) * 100}%`,
+                      width: topCoupons.length > 0 ? `${(coupon.redemptions / topCoupons[0].redemptions) * 100}%` : '0%',
                       background: 'linear-gradient(90deg, #E8132A 0%, #F5A623 100%)'
                     }}
                   ></div>
@@ -135,27 +164,27 @@ export default function AdminAnalytics() {
           
           <div className="px-4">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Customers</p>
-            <p className="text-3xl font-bold text-fp-navy">80</p>
+            <p className="text-3xl font-bold text-fp-navy">{kpis.total_customers.toLocaleString()}</p>
           </div>
           
           <div className="px-4">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Active 7D</p>
-            <p className="text-3xl font-bold text-green-500">63</p>
+            <p className="text-3xl font-bold text-green-500">{kpis.active_this_week.toLocaleString()}</p>
           </div>
           
           <div className="px-4">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Redemptions</p>
-            <p className="text-3xl font-bold text-fp-red">251</p>
+            <p className="text-3xl font-bold text-fp-red">{kpis.total_redemptions.toLocaleString()}</p>
           </div>
           
           <div className="px-4">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Points Issued</p>
-            <p className="text-3xl font-bold text-fp-gold">302,862</p>
+            <p className="text-3xl font-bold text-fp-gold">{kpis.points_issued.toLocaleString()}</p>
           </div>
           
           <div className="px-4">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Revenue</p>
-            <p className="text-3xl font-bold text-fp-navy">$30,312</p>
+            <p className="text-3xl font-bold text-fp-navy">${kpis.estimated_revenue.toLocaleString()}</p>
           </div>
 
         </div>

@@ -1,59 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, LineChart, Line
 } from 'recharts';
 import { Users, Ticket, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
-
-const KPIData = [
-  { title: 'Total Customers', value: '4,289', change: '+12%', trend: 'up', data: [40, 50, 45, 60, 70, 80, 85] },
-  { title: 'Active This Week', value: '1,842', change: '+5%', trend: 'up', data: [20, 25, 22, 30, 28, 35, 40] },
-  { title: 'Coupons Redeemed', value: '8,392', change: '-2%', trend: 'down', data: [90, 85, 80, 75, 70, 68, 65] },
-  { title: 'Revenue Boost Est.', value: '$12,450', change: '+18%', trend: 'up', data: [30, 40, 35, 50, 65, 80, 95] }
-];
-
-const weeklyRedemptions = [
-  { name: '06-21', value: 3.5 },
-  { name: '06-22', value: 4.2 },
-  { name: '06-23', value: 4.8 },
-  { name: '06-24', value: 3.2 },
-  { name: '06-25', value: 5.1 },
-  { name: '06-26', value: 4.5 },
-  { name: '06-27', value: 2.1 },
-];
-
-const tierDistribution = [
-  { name: 'Bronze', value: 45, color: '#CD7F32' },
-  { name: 'Silver', value: 30, color: '#C0C0C0' },
-  { name: 'Gold', value: 20, color: '#FFD700' },
-  { name: 'Platinum', value: 5, color: '#E5E4E2' },
-];
-
-const pointsEconomy = Array.from({length: 30}).map((_, i) => ({
-  date: `06-${String(i+1).padStart(2, '0')}`,
-  points: Math.floor(Math.random() * 8000) + 6000
-}));
-
-const recentActivity = [
-  { user: 'Alex Rivers', avatar: 'AR', action: 'joined FuelPro Rewards', time: '1h ago', type: 'JOINED' },
-  { user: 'Mason Iyer', avatar: 'MI', action: 'made a $55.53 store purchase', time: '2h ago', type: 'EARNED' },
-  { user: 'Olivia Anderson', avatar: 'OA', action: 'made a $40.40 carwash purchase', time: '2h ago', type: 'EARNED' },
-  { user: 'Ava Davis', avatar: 'AD', action: 'made a $48.70 fuel purchase', time: '2h ago', type: 'EARNED' },
-];
-
-const topCoupons = [
-  { name: '5% Cashback on Premium Fuel', redemptions: 35 },
-  { name: 'Free Coffee with Fill-up', redemptions: 34 },
-  { name: '20% Off Snacks', redemptions: 26 },
-  { name: '$5 Off Car Wash', redemptions: 25 },
-  { name: '$10 Off Diesel Fill-up', redemptions: 25 },
-];
-
-const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const hours = Array.from({length: 24}).map((_, i) => i);
-const heatmapData = days.map(day => 
-  hours.map(hour => Math.floor(Math.random() * 10))
-);
+import { api, formatApiErrorDetail } from '@/lib/api';
+import { toast } from 'sonner';
 
 const Sparkline = ({ data, color }) => (
   <div className="h-12 w-24">
@@ -66,12 +18,82 @@ const Sparkline = ({ data, color }) => (
 );
 
 export default function AdminDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    kpis: {
+      total_customers: 0,
+      active_this_week: 0,
+      coupons_redeemed: 0,
+      points_issued: 0,
+      revenue: 0
+    },
+    weeklyRedemptions: [],
+    tierDistribution: [],
+    pointsEconomy: [],
+    topCoupons: []
+  });
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [overviewRes, weeklyRes, tierRes, growthRes, couponRes] = await Promise.all([
+        api.get('/analytics/overview'),
+        api.get('/analytics/weekly-redemptions'),
+        api.get('/analytics/tier-distribution'),
+        api.get('/analytics/customer-growth'),
+        api.get('/analytics/coupon-performance')
+      ]);
+
+      setData({
+        kpis: overviewRes.data?.data || {},
+        weeklyRedemptions: (weeklyRes.data?.data || []).map(d => ({
+          name: d.date.substring(5),
+          value: d.redemptions
+        })),
+        tierDistribution: (tierRes.data?.data || []).map(t => ({
+          name: t.name,
+          value: t.count,
+          color: t.color
+        })),
+        pointsEconomy: (growthRes.data?.data || []).map(g => ({
+          date: g.date.substring(5),
+          points: g.count * 100 // Mocking points based on growth since no endpoint
+        })),
+        topCoupons: (couponRes.data?.data || []).map(c => ({
+          name: c.title,
+          redemptions: c.redemptions
+        }))
+      });
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500 font-medium animate-pulse">Loading dashboard...</div>;
+  }
+
+  const { kpis, weeklyRedemptions, tierDistribution, pointsEconomy, topCoupons } = data;
+
+  const kpiCards = [
+    { title: 'Total Customers', value: kpis.total_customers?.toLocaleString(), change: '+12%', trend: 'up', data: [40, 50, 45, 60, 70, 80, 85] },
+    { title: 'Active This Week', value: kpis.active_this_week?.toLocaleString(), change: '+5%', trend: 'up', data: [20, 25, 22, 30, 28, 35, 40] },
+    { title: 'Coupons Redeemed', value: kpis.coupons_redeemed?.toLocaleString(), change: '-2%', trend: 'down', data: [90, 85, 80, 75, 70, 68, 65] },
+    { title: 'Revenue', value: `$${kpis.revenue?.toLocaleString()}`, change: '+18%', trend: 'up', data: [30, 40, 35, 50, 65, 80, 95] }
+  ];
+
   return (
     <div className="space-y-6">
       
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {KPIData.map((kpi, i) => (
+        {kpiCards.map((kpi, i) => (
           <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">{kpi.title}</p>
@@ -129,11 +151,11 @@ export default function AdminDashboard() {
 
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         
         {/* Points Economy */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 xl:col-span-2">
-          <h3 className="text-lg font-bold text-fp-navy mb-6">Points Economy (30d)</h3>
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-fp-navy mb-6">Customer Growth (14d)</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={pointsEconomy}>
@@ -153,66 +175,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-fp-navy">Recent Activity</h3>
-            <Activity className="w-5 h-5 text-green-500" />
-          </div>
-          <div className="space-y-6">
-            {recentActivity.map((activity, i) => (
-              <div key={i} className="flex items-start">
-                <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-sm mr-4 flex-shrink-0">
-                  {activity.avatar}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-800 leading-snug">
-                    <span className="font-bold text-fp-navy mr-1">{activity.user}</span> 
-                    {activity.action}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
-                </div>
-                <div className="ml-2">
-                  <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded-full uppercase">
-                    {activity.type}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        
-        {/* Visit Heatmap */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-fp-navy mb-6">Visit Heatmap (last 7 days)</h3>
-          <div className="flex text-xs text-gray-400 mb-2">
-            <div className="w-8"></div>
-            <div className="flex-1 flex justify-between px-2">
-              <span>0h</span><span>6h</span><span>12h</span><span>18h</span>
-            </div>
-          </div>
-          <div className="space-y-1">
-            {days.map((day, dIdx) => (
-              <div key={day} className="flex items-center">
-                <div className="w-8 text-xs font-medium text-gray-500">{day}</div>
-                <div className="flex-1 flex gap-1">
-                  {heatmapData[dIdx].map((val, hIdx) => {
-                    const intensity = val === 0 ? 'bg-gray-50' : 
-                                      val < 3 ? 'bg-red-200' : 
-                                      val < 6 ? 'bg-red-400' : 
-                                      val < 8 ? 'bg-red-500' : 'bg-red-600';
-                    return <div key={hIdx} className={`flex-1 h-4 rounded-sm ${intensity} hover:ring-2 hover:ring-fp-navy transition-all cursor-pointer`} title={`${day} ${hIdx}:00 - ${val} visits`}></div>;
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Top Coupons */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-fp-navy mb-6">Top Coupons</h3>
@@ -227,7 +189,7 @@ export default function AdminDashboard() {
                   <div 
                     className="h-2 rounded-full" 
                     style={{
-                      width: `${(coupon.redemptions / topCoupons[0].redemptions) * 100}%`,
+                      width: topCoupons.length > 0 ? `${(coupon.redemptions / topCoupons[0].redemptions) * 100}%` : '0%',
                       background: 'linear-gradient(90deg, #E8132A 0%, #F5A623 100%)'
                     }}
                   ></div>

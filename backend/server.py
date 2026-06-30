@@ -45,6 +45,12 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/")
+async def app_root():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api")
+
+
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(coupons_router)

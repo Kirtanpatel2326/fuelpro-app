@@ -23,6 +23,7 @@ from routes.analytics import router as analytics_router
 from routes.gamification import router as gamification_router
 from routes.locations import router as locations_router
 from routes.scanner import router as scanner_router
+from routes.fraud import router as fraud_router
 from seed import run_seed
 from scheduler_jobs import start_scheduler
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -57,6 +58,7 @@ api_router.include_router(analytics_router)
 api_router.include_router(gamification_router)
 api_router.include_router(locations_router)
 api_router.include_router(scanner_router)
+api_router.include_router(fraud_router)
 
 @api_router.get("/tiers")
 async def list_tiers():

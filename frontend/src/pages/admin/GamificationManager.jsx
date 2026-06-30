@@ -1,11 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Gift, Award, Plus, Trash2, Edit } from 'lucide-react';
+import { api } from '@/lib/api';
 
 export default function GamificationManager() {
-  const [challenges, setChallenges] = useState([
-    { id: 1, title: "Weekend Warrior", points: 500, requirement: "2 Fill Ups", status: "Active" },
-    { id: 2, title: "Coffee Lover", points: 200, requirement: "5 Coffees", status: "Active" }
-  ]);
+  const [challenges, setChallenges] = useState([]);
+
+  const fetchChallenges = async () => {
+    try {
+      const res = await api.get('/gamification/challenges');
+      if (res.data.success) {
+        setChallenges(res.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching challenges", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchChallenges();
+  }, []);
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Delete this challenge?")) {
+      try {
+        await api.delete(`/gamification/challenges/${id}`);
+        fetchChallenges();
+      } catch (error) {
+        console.error("Error deleting challenge", error);
+      }
+    }
+  };
+
+  const handleCreate = async () => {
+    try {
+      const newChallenge = {
+        title: "New Challenge",
+        points: 100,
+        requirement: "1 Requirement",
+        status: "Active"
+      };
+      await api.post('/gamification/challenges', newChallenge);
+      fetchChallenges();
+    } catch (error) {
+      console.error("Error creating challenge", error);
+    }
+  };
+
+  const handleToggleStatus = async (challenge) => {
+    try {
+      const newStatus = challenge.status === 'Active' ? 'Inactive' : 'Active';
+      await api.put(`/gamification/challenges/${challenge.id}`, { status: newStatus });
+      fetchChallenges();
+    } catch (error) {
+      console.error("Error updating challenge", error);
+    }
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -16,7 +65,7 @@ export default function GamificationManager() {
           </h1>
           <p className="text-gray-500 mt-2">Manage customer challenges, scratch cards, and rewards.</p>
         </div>
-        <button className="bg-[#0A1628] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#112240] transition">
+        <button onClick={handleCreate} className="bg-[#0A1628] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#112240] transition">
           <Plus className="w-5 h-5" /> New Challenge
         </button>
       </div>
@@ -56,8 +105,8 @@ export default function GamificationManager() {
                   </span>
                 </td>
                 <td className="p-4 flex items-center justify-end gap-2">
-                  <button className="p-2 hover:bg-gray-200 rounded-lg text-gray-500"><Edit className="w-4 h-4" /></button>
-                  <button className="p-2 hover:bg-red-50 text-red-500 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleToggleStatus(c)} className="p-2 hover:bg-gray-200 rounded-lg text-gray-500" title="Toggle Status"><Edit className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(c.id)} className="p-2 hover:bg-red-50 text-red-500 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                 </td>
               </tr>
             ))}

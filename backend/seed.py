@@ -184,6 +184,8 @@ async def write_credentials_file() -> None:
 - CORS origins are whitelisted (no wildcard)
 """
     import os as _os
+    if _os.environ.get("ENV") != "development":
+        return
     _os.makedirs("./memory", exist_ok=True)
     with open("./memory/test_credentials.md", "w") as f:
         f.write(content)

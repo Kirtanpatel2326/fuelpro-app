@@ -1,21 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Search, Filter, Ban, CheckCircle, ChevronRight, Lock } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { api } from '@/lib/api';
 
 const flagsOverTime = Array.from({length: 30}).map((_, i) => ({
   date: `06-${String(i+1).padStart(2, '0')}`,
   flags: Math.floor(Math.random() * 5)
 }));
 
-const flaggedAccounts = [
-  { id: '1', name: 'James Smith', email: 'james.smith@example.com', reason: 'Multiple devices within 24h', severity: 'High', status: 'Pending Review', date: '2026-06-27' },
-  { id: '2', name: 'Maria Garcia', email: 'maria.g@example.com', reason: 'Unusually high point redemption', severity: 'Medium', status: 'Pending Review', date: '2026-06-26' },
-  { id: '3', name: 'David Lee', email: 'davidlee88@example.com', reason: 'Frequent IP changes', severity: 'Low', status: 'Under Investigation', date: '2026-06-25' },
-  { id: '4', name: 'Sarah Connor', email: 'sarah.c@example.com', reason: 'Multiple failed login attempts', severity: 'High', status: 'Suspended', date: '2026-06-24' },
-];
-
 export default function AdminFraud() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [flaggedAccounts, setFlaggedAccounts] = useState([]);
+  const [stats, setStats] = useState({
+    critical_flags: 0,
+    accounts_suspended: 0,
+    resolved_flags: 0,
+    total_flags: 0
+  });
+
+  const fetchData = async () => {
+    try {
+      const [flagsRes, statsRes] = await Promise.all([
+        api.get('/fraud'),
+        api.get('/fraud/stats')
+      ]);
+      if (flagsRes.data.success) {
+        setFlaggedAccounts(flagsRes.data.data);
+      }
+      if (statsRes.data.success) {
+        setStats(statsRes.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching fraud data", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleUpdateStatus = async (id, status) => {
+    try {
+      await api.put(`/fraud/${id}`, { status });
+      fetchData();
+    } catch (error) {
+      console.error("Error updating flag", error);
+    }
+  };
 
   const getSeverityColor = (severity) => {
     switch(severity) {
@@ -52,15 +83,15 @@ export default function AdminFraud() {
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-100">
                 <span className="font-bold text-red-800">Critical Flags</span>
-                <span className="text-xl font-bold text-red-600">4</span>
+                <span className="text-xl font-bold text-red-600">{stats.critical_flags}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg border border-orange-100">
                 <span className="font-bold text-orange-800">Accounts Suspended</span>
-                <span className="text-xl font-bold text-orange-600">12</span>
+                <span className="text-xl font-bold text-orange-600">{stats.accounts_suspended}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border border-green-100">
                 <span className="font-bold text-green-800">False Positives (30d)</span>
-                <span className="text-xl font-bold text-green-600">2</span>
+                <span className="text-xl font-bold text-green-600">{stats.resolved_flags}</span>
               </div>
             </div>
             <button className="w-full mt-6 py-2.5 bg-fp-navy text-white rounded-lg font-bold hover:bg-[#2A3F54] transition-colors flex items-center justify-center">
@@ -147,10 +178,10 @@ export default function AdminFraud() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      <button className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="Resolve">
+                      <button onClick={() => handleUpdateStatus(account.id, 'Resolved')} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="Resolve">
                         <CheckCircle className="w-5 h-5" />
                       </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Suspend Account">
+                      <button onClick={() => handleUpdateStatus(account.id, 'Suspended')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Suspend Account">
                         <Ban className="w-5 h-5" />
                       </button>
                       <button className="p-1.5 text-gray-400 hover:text-fp-navy hover:bg-gray-100 rounded transition-colors" title="View Details">

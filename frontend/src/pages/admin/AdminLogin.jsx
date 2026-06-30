@@ -7,8 +7,8 @@ import { toast } from 'sonner';
 export default function AdminLogin() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@fuelpro.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e) => {
@@ -81,7 +81,7 @@ export default function AdminLogin() {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-400">
-          <p>Demo Mode: Just click login to proceed.</p>
+          <p>Please log in with your admin credentials.</p>
         </div>
       </div>
     </div>

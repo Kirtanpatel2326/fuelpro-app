@@ -75,6 +75,59 @@ async def spin_wheel(user: dict = Depends(get_current_user)):
         k=1
     )[0]
     
-    await award_points(db, user["id"], prize, "GAMIFICATION", "Spin the Wheel Reward")
-    
     return {"success": True, "prize": prize, "is_jackpot": prize == 500}
+
+# --- Admin CRUD for Challenges ---
+from auth_utils import get_admin_user
+
+class ChallengeCreate(BaseModel):
+    title: str
+    points: int
+    requirement: str
+    status: str = "Active"
+
+class ChallengeUpdate(BaseModel):
+    title: str | None = None
+    points: int | None = None
+    requirement: str | None = None
+    status: str | None = None
+
+@router.get("/challenges")
+async def get_challenges():
+    from server import db
+    cursor = db.challenges.find({})
+    challenges = await cursor.to_list(length=100)
+    for c in challenges:
+        c.pop("_id", None)
+    return {"success": True, "data": challenges}
+
+@router.post("/challenges")
+async def create_challenge(challenge: ChallengeCreate, admin: dict = Depends(get_admin_user)):
+    from server import db
+    doc = challenge.model_dump()
+    doc["id"] = str(uuid.uuid4())
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    await db.challenges.insert_one(doc)
+    doc.pop("_id", None)
+    return {"success": True, "data": doc}
+
+@router.put("/challenges/{challenge_id}")
+async def update_challenge(challenge_id: str, update: ChallengeUpdate, admin: dict = Depends(get_admin_user)):
+    from server import db
+    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    result = await db.challenges.update_one({"id": challenge_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+        
+    return {"success": True, "message": "Challenge updated successfully"}
+
+@router.delete("/challenges/{challenge_id}")
+async def delete_challenge(challenge_id: str, admin: dict = Depends(get_admin_user)):
+    from server import db
+    result = await db.challenges.delete_one({"id": challenge_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+    return {"success": True, "message": "Challenge deleted successfully"}
